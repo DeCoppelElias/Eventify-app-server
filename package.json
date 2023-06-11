@@ -4,15 +4,18 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server",
-    "dev": "nodemon server"
+    "start": "node api",
+    "dev": "nodemon api"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bootstrap": "^5.2.3",
     "express": "^4.18.2",
-    "react-icons": "^4.8.0"
+    "jsonwebtoken": "^9.0.0",
+    "react-bootstrap": "^2.7.4",
+    "react-icons": "^4.8.0",
+    "react-id-generator": "^3.0.2"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
