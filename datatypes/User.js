@@ -13,6 +13,9 @@ class User{
 
         this.yourGroups = [];
         this.yourEvents = [];
+
+        this.going = [];
+        this.maybe = [];
     }
 
     AddEvent(eventId){
@@ -54,6 +57,14 @@ class User{
         if (index > -1) {
             this.groups.splice(index, 1); 
         }
+    }
+
+    SetGoing(eventId){
+        this.going.push(eventId);
+    }
+
+    SetMaybe(eventId){
+        this.maybe.push(eventId);
     }
 }
 
