@@ -1,5 +1,5 @@
 class Event{
-    constructor(id, title, location, time, tags, description, restricted) {
+    constructor(id, title, location, time, tags, description, restricted, imageType) {
         this.id = id;
         this.title = title;
         this.location = location;
@@ -7,14 +7,31 @@ class Event{
         this.description = description;
         this.restricted = restricted;
         this.tags = tags;
+        this.imageType = imageType;
 
         this.going = [];
         this.maybe = [];
         this.notGoing = [];
+        this.posts = [];
+    }
+
+    AddPost(postId){
+        this.posts.push(postId);
+    }
+
+    IsGoing(userId){
+        return this.going.includes(userId);
+    }
+
+    IsMaybe(userId){
+        return this.maybe.includes(userId);
     }
 
     AddToGoing(userId){
-        this.going.push(userId);
+        const index = this.going.indexOf(userId);
+        if (index == -1) {
+            this.going.push(userId);
+        }
 
         if (this.maybe.includes(userId)){
             this.RemoveFromMaybe(userId);
@@ -32,7 +49,10 @@ class Event{
     }
 
     AddToMaybe(userId){
-        this.maybe.push(userId);
+        const index = this.maybe.indexOf(userId);
+        if (index == -1) {
+            this.maybe.push(userId);
+        }
 
         if (this.going.includes(userId)){
             this.RemoveFromGoing(userId);
@@ -50,7 +70,10 @@ class Event{
     }
 
     AddToNotGoing(userId){
-        this.notGoing.push(userId);
+        const index = this.notGoing.indexOf(userId);
+        if (index == -1) {
+            this.notGoing.push(userId); 
+        }
 
         if (this.maybe.includes(userId)){
             this.RemoveFromMaybe(userId);

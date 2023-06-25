@@ -1,6 +1,7 @@
 const Event = require('./datatypes/Event');
 const Group = require('./datatypes/Group');
 const User = require('./datatypes/User');
+const Post = require('./datatypes/Post')
 
 class TestSetup{
     constructor(){
@@ -9,6 +10,8 @@ class TestSetup{
         this.privateEvents = this.CreatePrivateEvents();
         this.publicGroups = this.CreatePublicGroups();
         this.privateGroups = this.CreatePrivateGroups();
+        this.posts = this.CreatePosts();
+        this.tags = ["outside", "inside", "chill", "cool"]
     }
 
     CreateUsers(){
@@ -53,7 +56,8 @@ class TestSetup{
             new Date('December 20, 2023 16:15:00'),
             ["indoor", "volleybal", "sport"],
             "We are going to practise all sorts of volleybal drills. Starting with easy drills for warmup and then building up to more difficult exercises.", 
-            false);
+            false,
+            "jpg");
         events.set(volleybalEvent.id, volleybalEvent);
         this.users.get("test-user-Elias").AddEvent(volleybalEvent.id);
     
@@ -64,7 +68,8 @@ class TestSetup{
             new Date('January 10, 2023 12:15:00'),
             ["outdoor", "football", "sport"],
             "Playing some casual footbal with everyone that want to join us.", 
-            false);
+            false,
+            "jpg");
         events.set(footballEvent.id, footballEvent);
         this.users.get("test-user-Joran").AddEvent(footballEvent.id);
     
@@ -75,7 +80,8 @@ class TestSetup{
             new Date('Juli 23, 2023 14:30:00'),
             ["outdoor", "baseball", "sport"],
             "Going to play some baseball with my friends, join if you're interested!!", 
-            false);
+            false,
+            "jpg");
         events.set(baseballEvent.id, baseballEvent);
         this.users.get("test-user-Elias").AddEvent(baseballEvent.id);
     
@@ -91,7 +97,8 @@ class TestSetup{
             new Date('june 30, 2023 20:00:00'),
             ["indoor", "party", "singing"],
             "3de letter cantus, lets goooooooooooo.", 
-            false);
+            false,
+            "jpg");
         events.set(cantusEvent.id, cantusEvent);
         this.users.get("test-user-Elias").AddEvent(cantusEvent.id);
         this.users.get("test-user-Joran").InviteToEvent(cantusEvent.id);
@@ -104,7 +111,8 @@ class TestSetup{
             new Date('May 28, 2023 18:00:00'),
             ["indoor", "gaming"],
             "Lan party at my house! Bring chips!", 
-            false);
+            false,
+            "jpg");
         events.set(lanParty.id, lanParty);
         this.users.get("test-user-Joran").AddEvent(lanParty.id);
         this.users.get("test-user-Elias").InviteToEvent(lanParty.id);
@@ -160,6 +168,39 @@ class TestSetup{
         this.users.get("test-user-Sophie").InviteToGroup(lerkeveldUnderground.id);
     
         return groups;
+    }
+
+    CreatePosts(){
+        const posts = new Map();
+
+        const volleybalPost1 = new Post(
+            "test-volleybal1-post",
+            "Don't miss the first training!!",
+            "Hey guys, this is a friendly reminder to come to the first training session",
+            "test-user-Elias"
+        );
+        posts.set(volleybalPost1.id, volleybalPost1);
+        this.publicEvents.get("test-volleyball-event").AddPost(volleybalPost1.id);
+
+        const volleybalPost2 = new Post(
+            "test-volleybal2-post",
+            "Training location",
+            "I was wondering where the first training session would be, which local gym exactly?",
+            "test-user-Elias"
+        );
+        posts.set(volleybalPost2.id, volleybalPost2);
+        this.publicEvents.get("test-volleyball-event").AddPost(volleybalPost2.id);
+
+        const volleybalPost3 = new Post(
+            "test-volleybal3-post",
+            "HYPEEEEEEE",
+            "IM SO HYPED TO PLAY VOLLEYBAL WITH YOU GUYS OMG OMG",
+            "test-user-Elias"
+        );
+        posts.set(volleybalPost3.id, volleybalPost3);
+        this.publicEvents.get("test-volleyball-event").AddPost(volleybalPost3.id);
+
+        return posts;
     }
 }
 

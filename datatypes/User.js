@@ -16,6 +16,31 @@ class User{
 
         this.going = [];
         this.maybe = [];
+
+        this.likedPosts = [];
+        this.dislikedPosts = [];
+    }
+
+    AddLikedPost(postId){
+        this.likedPosts.push(postId);
+    }
+
+    RemoveLikedPost(postId){
+        const index = this.likedPosts.indexOf(postId);
+        if (index > -1) {
+            this.likedPosts.splice(index, 1); 
+        }
+    }
+
+    AddDislikedPost(postId){
+        this.dislikedPosts.push(postId);
+    }
+
+    RemoveDislikedPost(postId){
+        const index = this.dislikedPosts.indexOf(postId);
+        if (index > -1) {
+            this.dislikedPosts.splice(index, 1); 
+        }
     }
 
     AddEvent(eventId){
@@ -60,11 +85,39 @@ class User{
     }
 
     SetGoing(eventId){
-        this.going.push(eventId);
+        const index = this.going.indexOf(eventId);
+        if (index == -1) {
+            this.going.push(eventId);
+        }
+
+        if (this.maybe.includes(eventId)){
+            this.RemoveFromMaybe(eventId);
+        }
+    }
+
+    RemoveFromGoing(eventId){
+        const index = this.going.indexOf(eventId);
+        if (index == -1) {
+            this.going.splice(index, 1); 
+        }
     }
 
     SetMaybe(eventId){
-        this.maybe.push(eventId);
+        const index = this.maybe.indexOf(eventId);
+        if (index == -1) {
+            this.maybe.push(eventId);
+        }
+
+        if (this.going.includes(eventId)){
+            this.RemoveFromGoing(eventId);
+        }
+    }
+
+    RemoveFromMaybe(eventId){
+        const index = this.maybe.indexOf(eventId);
+        if (index == -1) {
+            this.maybe.splice(index, 1); 
+        }
     }
 }
 
