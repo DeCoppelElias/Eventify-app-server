@@ -19,6 +19,13 @@ class Event{
         this.posts.push(postId);
     }
 
+    RemovePost(postId){
+        const index = this.posts.indexOf(postId);
+        if (index > -1) {
+            this.posts.splice(index, 1); 
+        }
+    }
+
     IsGoing(userId){
         return this.going.includes(userId);
     }

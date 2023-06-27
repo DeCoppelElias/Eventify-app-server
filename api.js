@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const Event = require('./datatypes/Event');
 const Group = require('./datatypes/Group');
 const User = require('./datatypes/User');
+const Post = require('./datatypes/Post');
 const {default:nextId} = require("react-id-generator");
 const TestSetup = require('./TestSetup');
 const fileUpload = require('express-fileupload');
@@ -235,6 +236,54 @@ app.get("/api/getPosts", authenticate, (req, res) => {
     res.json({"posts": []})
 });
 
+app.post("/api/createPost", authenticate, (req, res) => {
+    const userId = req.body.userId;
+    const eventId = req.body.eventId;
+    const postTitle = req.body.postTitle;
+    const postText = req.body.postText;
+    const postId = nextId();
+
+    const newPost = new Post(
+        postId,
+        postTitle,
+        postText,
+        userId
+    );
+
+    posts.set(postId, newPost);
+    
+    let event = publicEvents.get(eventId);
+    if (event == undefined){
+        event = privateEvents.get(eventId);
+    }
+    
+    if (event != undefined){
+        event.AddPost(postId);
+    }
+})
+
+app.post("/api/removePost", authenticate, (req, res) => {
+    const userId = req.body.userId;
+    const eventId = req.body.eventId;
+    const postId = req.body.postId;
+    const creatorId = req.body.creatorId;
+
+    if (userId != creatorId) {
+        return;
+    }
+
+    posts.delete(postId);
+    
+    let event = publicEvents.get(eventId);
+    if (event == undefined){
+        event = privateEvents.get(eventId);
+    }
+    
+    if (event != undefined){
+        event.RemovePost(postId);
+    }
+})
+
 app.post("/api/createEvent", authenticate, (req, res) => {
     const userId = req.body.userId;
     const eventId = nextId();
@@ -248,6 +297,7 @@ app.post("/api/createEvent", authenticate, (req, res) => {
         req.body.description, 
         req.body.restricted,
         req.body.imageType);
+    
     if(req.body.restricted){
         privateEvents.set(newEvent.id, newEvent);
     }

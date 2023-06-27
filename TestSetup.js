@@ -11,7 +11,7 @@ class TestSetup{
         this.publicGroups = this.CreatePublicGroups();
         this.privateGroups = this.CreatePrivateGroups();
         this.posts = this.CreatePosts();
-        this.tags = ["outside", "inside", "chill", "cool"]
+        this.tags = ["outside", "inside", "party", "chill", "sport"]
     }
 
     CreateUsers(){
@@ -54,7 +54,7 @@ class TestSetup{
             "Volleybal practice", 
             "The local gym",
             new Date('December 20, 2023 16:15:00'),
-            ["indoor", "volleybal", "sport"],
+            ["inside", "sport", "chill"],
             "We are going to practise all sorts of volleybal drills. Starting with easy drills for warmup and then building up to more difficult exercises.", 
             false,
             "jpg");
@@ -66,7 +66,7 @@ class TestSetup{
             "Casual Football", 
             "The local park",
             new Date('January 10, 2023 12:15:00'),
-            ["outdoor", "football", "sport"],
+            ["outside", "sport"],
             "Playing some casual footbal with everyone that want to join us.", 
             false,
             "jpg");
@@ -78,7 +78,7 @@ class TestSetup{
             "Baseball games", 
             "The local park",
             new Date('Juli 23, 2023 14:30:00'),
-            ["outdoor", "baseball", "sport"],
+            ["outside", "sport"],
             "Going to play some baseball with my friends, join if you're interested!!", 
             false,
             "jpg");
@@ -95,7 +95,7 @@ class TestSetup{
             "3de letter cantus", 
             "keuken zuid",
             new Date('june 30, 2023 20:00:00'),
-            ["indoor", "party", "singing"],
+            ["inside", "party"],
             "3de letter cantus, lets goooooooooooo.", 
             false,
             "jpg");
@@ -109,7 +109,7 @@ class TestSetup{
             "Lan Party", 
             "At my house",
             new Date('May 28, 2023 18:00:00'),
-            ["indoor", "gaming"],
+            ["inside", "chill"],
             "Lan party at my house! Bring chips!", 
             false,
             "jpg");
