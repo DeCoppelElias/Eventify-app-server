@@ -1,5 +1,5 @@
 class Event{
-    constructor(id, title, location, time, tags, description, restricted, imageType) {
+    constructor(id, title, location, time, tags, description, restricted, imageType, creatorId) {
         this.id = id;
         this.title = title;
         this.location = location;
@@ -13,10 +13,24 @@ class Event{
         this.maybe = [];
         this.notGoing = [];
         this.posts = [];
+        this.invitedUsers = [];
+
+        this.administrators = [creatorId];
+    }
+
+    InviteUsers(userIds){
+        for (const userId of userIds){
+            const index = this.invitedUsers.indexOf(userId);
+            if (index == -1){
+                this.invitedUsers.push(userId);
+            }
+        }
     }
 
     AddPost(postId){
-        this.posts.push(postId);
+        if (!this.posts.includes(postId)){
+            this.posts.push(postId);
+        }
     }
 
     RemovePost(postId){
@@ -35,15 +49,10 @@ class Event{
     }
 
     AddToGoing(userId){
-        const index = this.going.indexOf(userId);
-        if (index == -1) {
+        if (!this.going.includes(userId)) {
             this.going.push(userId);
-        }
 
-        if (this.maybe.includes(userId)){
             this.RemoveFromMaybe(userId);
-        }
-        if (this.notGoing.includes(userId)){
             this.RemoveFromNotGoing(userId);
         }
     }
@@ -56,15 +65,10 @@ class Event{
     }
 
     AddToMaybe(userId){
-        const index = this.maybe.indexOf(userId);
-        if (index == -1) {
+        if (!this.maybe.includes(userId)) {
             this.maybe.push(userId);
-        }
 
-        if (this.going.includes(userId)){
             this.RemoveFromGoing(userId);
-        }
-        if (this.notGoing.includes(userId)){
             this.RemoveFromNotGoing(userId);
         }
     }
@@ -77,15 +81,10 @@ class Event{
     }
 
     AddToNotGoing(userId){
-        const index = this.notGoing.indexOf(userId);
-        if (index == -1) {
+        if (!this.notGoing.includes(userId)) {
             this.notGoing.push(userId); 
-        }
 
-        if (this.maybe.includes(userId)){
             this.RemoveFromMaybe(userId);
-        }
-        if (this.going.includes(userId)){
             this.RemoveFromGoing(userId);
         }
     }
@@ -98,4 +97,4 @@ class Event{
     }
 }
 
-module.exports = Event;
+exports.Event = Event;

@@ -51,7 +51,79 @@ app.get("/api/getPublicEvents", authenticate, (req, res) => {
     res.json({"events": Array.from(publicEvents.values())})
 });
 
-app.get("/api/getInvitedEvents", authenticate, (req, res) => {
+app.get("/api/getGoingEvents", authenticate, (req, res) => {
+    const userId = req.query.userId;
+
+    const user = users.get(userId);
+    if(user == undefined){
+        res.sendStatus(404);
+        return res;
+    }
+
+    const events = [];
+    for(id of user.going){
+        let event = privateEvents.get(id);
+        if (event == undefined){
+            event = publicEvents.get(id);
+        }
+        
+        if (event != undefined){
+            events.push(event);
+        }
+    }
+
+    res.json({"events": events})
+});
+
+app.get("/api/getNotGoingEvents", authenticate, (req, res) => {
+    const userId = req.query.userId;
+
+    const user = users.get(userId);
+    if(user == undefined){
+        res.sendStatus(404);
+        return res;
+    }
+
+    const events = [];
+    for(id of user.notGoing){
+        let event = privateEvents.get(id);
+        if (event == undefined){
+            event = publicEvents.get(id);
+        }
+        
+        if (event != undefined){
+            events.push(event);
+        }
+    }
+
+    res.json({"events": events})
+});
+
+app.get("/api/getMaybeEvents", authenticate, (req, res) => {
+    const userId = req.query.userId;
+
+    const user = users.get(userId);
+    if(user == undefined){
+        res.sendStatus(404);
+        return res;
+    }
+
+    const events = [];
+    for(id of user.maybe){
+        let event = privateEvents.get(id);
+        if (event == undefined){
+            event = publicEvents.get(id);
+        }
+        
+        if (event != undefined){
+            events.push(event);
+        }
+    }
+
+    res.json({"events": events})
+});
+
+app.get("/api/getNotRepliedInvitedEvents", authenticate, (req, res) => {
     const userId = req.query.userId;
     const invitedEvents = GetInvitedEvents(userId);
     res.json({"events": invitedEvents})
@@ -61,7 +133,7 @@ function GetInvitedEvents(userId){
     let invitedEvents = [];
     const user = users.get(userId);
     if (user != undefined){
-        const invitedEventIds = user.invitedEvents;
+        const invitedEventIds = user.notRepliedInvitedEvents;
         for (id of invitedEventIds){
             const event = privateEvents.get(id);
             if (event != undefined){
@@ -90,11 +162,10 @@ function GetYourEvents(userId){
         const yourEventIds = user.yourEvents;
         for (id of yourEventIds){
             let event = privateEvents.get(id);
-            if (event != undefined){
-                yourEvents.push(event);
+            if (event == undefined){
+                event = publicEvents.get(id);
             }
-
-            event = publicEvents.get(id);
+            
             if (event != undefined){
                 yourEvents.push(event);
             }
@@ -122,6 +193,29 @@ app.get("/api/getEvent", authenticate, (req, res) => {
     res.status(404).send("Event does not exist");
 });
 
+app.get("/api/getEvents", authenticate, (req, res) => {
+    const eventIds = req.query.eventIds;
+    const events = [];
+    if (eventIds == undefined){
+        res.json({"events": events});
+        return res;
+    }
+
+    for (eventId of eventIds){
+        let event = publicEvents.get(eventId);
+        if (event == undefined){
+            event = privateEvents.get(eventId);
+        }
+
+        if (event != undefined){
+            events.push(event)
+        }
+    }
+
+    res.json({"events": events});
+    return res;
+});
+
 app.get("/api/getUser", authenticate, (req, res) => {
     const userId = req.query.userId;
 
@@ -134,11 +228,41 @@ app.get("/api/getUser", authenticate, (req, res) => {
     res.status(404).send("User does not exist");
 });
 
+app.get("/api/getUsers", authenticate, (req, res) => {
+    res.json({"users": Array.from(users.values())});
+});
+
 app.get("/api/getPublicGroups", authenticate, (req, res) => {
     res.json({"groups": Array.from(publicGroups.values())})
 });
 
-app.get("/api/getInvitedGroups", authenticate, (req, res) => {
+app.get("/api/getSubscribedGroups", authenticate, (req, res) => {
+    const userId = req.query.userId;
+    const subscribedGroups = GetSubscribedGroups(userId);
+    res.json({"groups": subscribedGroups});
+});
+
+function GetSubscribedGroups(userId){
+    let subscribedGroups = [];
+
+    const user = users.get(userId);
+    if (user != undefined){
+        const subscribedGroupIds = user.subscribedGroups;
+        for (id of subscribedGroupIds){
+            let group = privateGroups.get(id);
+            if(group == undefined){
+                group = publicGroups.get(id);
+            }
+            if (group != undefined){
+                subscribedGroups.push(group);
+            }
+        }
+    }
+
+    return subscribedGroups;
+}
+
+app.get("/api/getNotRepliedInvitedGroups", authenticate, (req, res) => {
     const userId = req.query.userId;
     const invitedGroups = GetInvitedGroups(userId);
     res.json({"groups": invitedGroups});
@@ -149,7 +273,7 @@ function GetInvitedGroups(userId){
 
     const user = users.get(userId);
     if (user != undefined){
-        const invitedGroupIds = user.invitedGroups;
+        const invitedGroupIds = user.notRepliedInvitedGroups;
         for (id of invitedGroupIds){
             const group = privateGroups.get(id);
             if (group != undefined){
@@ -212,33 +336,91 @@ app.get("/api/authenticate", authenticate, (req, res) => {
 });
 
 app.get("/api/getPosts", authenticate, (req, res) => {
-    const eventId = req.query.eventId;
+    const id = req.query.id;
+    const type = req.query.type;
 
-    let event = publicEvents.get(eventId);
-    if (event == undefined){
-        event = privateEvents.get(eventId);
-    }
-
-    if (event != undefined){
-        const ids = event.posts;
-        const eventPosts = [];
-        for (id of ids){
-            const post = posts.get(id);
-            if (post != undefined){
-                eventPosts.push(post);
-            }
+    if(type == "event"){
+        let event = publicEvents.get(id);
+        if (event == undefined){
+            event = privateEvents.get(id);
         }
 
-        res.json({"posts": eventPosts})
-        return res;
+        if (event != undefined){
+            const ids = event.posts;
+            const eventPosts = [];
+            for (currentId of ids){
+                const post = posts.get(currentId);
+                if (post != undefined){
+                    eventPosts.push(post);
+                }
+            }
+
+            res.json({"posts": eventPosts})
+            return res;
+        }
+    }
+    if (type == "group"){
+        let group = publicGroups.get(id);
+        if (group == undefined){
+            group = privateGroups.get(id);
+        }
+
+        if (group != undefined){
+            const ids = group.posts;
+            const groupPosts = [];
+            for (currentId of ids){
+                const post = posts.get(currentId);
+                if (post != undefined){
+                    groupPosts.push(post);
+                }
+            }
+
+            res.json({"posts": groupPosts})
+            return res;
+        }
     }
 
     res.json({"posts": []})
 });
 
+app.get("/api/getInvitedUsers", authenticate, (req, res) => {
+    const id = req.query.id;
+    const type = req.query.type;
+
+    if(type == "group"){
+        let group = publicGroups.get(id);
+        if (group == undefined){
+            group = privateGroups.get(id);
+        }
+        
+        if (group != undefined){
+            res.json({
+                invitedUsers : group.invitedUsers
+            });
+            return res;
+        }
+    }
+    if(type == "event"){
+        let event = publicEvents.get(id);
+        if (event == undefined){
+            event = privateEvents.get(id);
+        }
+        
+        if (event != undefined){
+            res.json({
+                invitedUsers : event.invitedUsers
+            });
+            return res;
+        }
+    }
+
+    res.sendStatus(404);
+})
+
 app.post("/api/createPost", authenticate, (req, res) => {
     const userId = req.body.userId;
-    const eventId = req.body.eventId;
+    const id = req.body.id;
+    const type = req.body.type;
     const postTitle = req.body.postTitle;
     const postText = req.body.postText;
     const postId = nextId();
@@ -252,19 +434,33 @@ app.post("/api/createPost", authenticate, (req, res) => {
 
     posts.set(postId, newPost);
     
-    let event = publicEvents.get(eventId);
-    if (event == undefined){
-        event = privateEvents.get(eventId);
+    if(type == "event"){
+        let event = publicEvents.get(id);
+        if (event == undefined){
+            event = privateEvents.get(id);
+        }
+        
+        if (event != undefined){
+            event.AddPost(postId);
+        }
+    }
+    if(type == "group"){
+        let group = publicGroups.get(id);
+        if (group == undefined){
+            group = privateGroups.get(id);
+        }
+        
+        if (group != undefined){
+            group.AddPost(postId);
+        }
     }
     
-    if (event != undefined){
-        event.AddPost(postId);
-    }
 })
 
 app.post("/api/removePost", authenticate, (req, res) => {
     const userId = req.body.userId;
-    const eventId = req.body.eventId;
+    const id = req.body.id;
+    const type = req.body.type;
     const postId = req.body.postId;
     const creatorId = req.body.creatorId;
 
@@ -274,13 +470,25 @@ app.post("/api/removePost", authenticate, (req, res) => {
 
     posts.delete(postId);
     
-    let event = publicEvents.get(eventId);
-    if (event == undefined){
-        event = privateEvents.get(eventId);
+    if(type == "event"){
+        let event = publicEvents.get(id);
+        if (event == undefined){
+            event = privateEvents.get(id);
+        }
+        
+        if (event != undefined){
+            event.RemovePost(postId);
+        }
     }
-    
-    if (event != undefined){
-        event.RemovePost(postId);
+    if(type == "group"){
+        let group = publicGroups.get(id);
+        if (group == undefined){
+            group = privateGroups.get(id);
+        }
+        
+        if (group != undefined){
+            group.RemovePost(postId);
+        }
     }
 })
 
@@ -296,7 +504,8 @@ app.post("/api/createEvent", authenticate, (req, res) => {
         req.body.tags, 
         req.body.description, 
         req.body.restricted,
-        req.body.imageType);
+        req.body.imageType,
+        userId);
     
     if(req.body.restricted){
         privateEvents.set(newEvent.id, newEvent);
@@ -313,7 +522,35 @@ app.post("/api/createEvent", authenticate, (req, res) => {
     res.send({'eventId': eventId});
 });
 
-app.post("/api/uploadImage", authenticate, (req, res) => {
+app.post("/api/createGroup", authenticate, (req, res) => {
+    const userId = req.body.userId;
+    const groupId = nextId();
+
+    const newGroup = new Group(
+        groupId, 
+        req.body.title, 
+        req.body.description, 
+        req.body.tags,
+        req.body.restricted,
+        req.body.imageType,
+        userId);
+    
+    if(req.body.restricted){
+        privateGroups.set(newGroup.id, newGroup);
+    }
+    else{
+        publicGroups.set(newGroup.id, newGroup);
+    }
+
+    const user = users.get(userId);
+    if (user != undefined){
+        user.AddGroup(groupId);
+    }
+
+    res.send({'groupId': groupId});
+});
+
+app.post("/api/uploadEventImage", authenticate, (req, res) => {
     const eventId = req.body.eventId;
     const { file } = req.files;
     if (!file) return res.sendStatus(400);
@@ -321,11 +558,83 @@ app.post("/api/uploadImage", authenticate, (req, res) => {
     // If does not have image mime type prevent from uploading
     if(file.mimetype == 'image/jpeg' || file.mimetype == 'image/png' || file.mimetype == 'image/svg' || file.mimetype == 'image/jpg'){
         const fileType = file.mimetype.split("/")[1];
-        file.mv('public/Images/image-' + eventId + "." + fileType);
+        file.mv('public/Images/events/image-' + eventId + "." + fileType);
     }
 
     res.send('Data Received');
 })
+
+app.post("/api/uploadGroupImage", authenticate, (req, res) => {
+    const groupId = req.body.groupId;
+    const { file } = req.files;
+    if (!file) return res.sendStatus(400);
+
+    // If does not have image mime type prevent from uploading
+    if(file.mimetype == 'image/jpeg' || file.mimetype == 'image/png' || file.mimetype == 'image/svg' || file.mimetype == 'image/jpg'){
+        const fileType = file.mimetype.split("/")[1];
+        file.mv('public/Images/groups/image-' + groupId + "." + fileType);
+    }
+
+    res.send('Data Received');
+})
+
+app.post("/api/subscribeToGroup", authenticate, (req, res) => {
+    const userId = req.body.userId;
+    const groupId = req.body.groupId;
+
+    let group = publicGroups.get(groupId);
+    if (group == undefined){
+        group = privateGroups.get(groupId);
+    }
+
+    if (group != undefined){
+        group.SubscribeUser(userId)
+    }
+    else{
+        res.sendStatus(404);
+        return;
+    }
+
+    const user = users.get(userId);
+    if (user != undefined){
+        user.SubscribeToGroup(groupId);
+    }
+    else{
+        res.sendStatus(404);
+        return;
+    }
+
+    res.send('Data Received');
+});
+
+app.post("/api/unSubscribeFromGroup", authenticate, (req, res) => {
+    const userId = req.body.userId;
+    const groupId = req.body.groupId;
+
+    let group = publicGroups.get(groupId);
+    if (group == undefined){
+        group = privateGroups.get(groupId);
+    }
+
+    if (group != undefined){
+        group.UnSubscribeUser(userId)
+    }
+    else{
+        res.sendStatus(404);
+        return;
+    }
+
+    const user = users.get(userId);
+    if (user != undefined){
+        user.UnSubscribeFromGroup(groupId);
+    }
+    else{
+        res.sendStatus(404);
+        return;
+    }
+
+    res.send('Data Received');
+});
 
 app.post("/api/setGoing", authenticate, (req, res) => {
     const userId = req.body.userId;
@@ -359,6 +668,37 @@ app.post("/api/setGoing", authenticate, (req, res) => {
         }
         else{
             user.RemoveFromGoing(eventId);
+        }
+    }
+
+    res.send('Data Received');
+});
+
+app.post("/api/setNotGoing", authenticate, (req, res) => {
+    const userId = req.body.userId;
+    const eventId = req.body.eventId;
+    const notGoing = req.body.notGoing;
+
+    let event = publicEvents.get(eventId);
+    if(event == undefined){
+        event = privateEvents.get(eventId);
+    }
+    if (event != undefined){
+        if (notGoing == true){
+            event.AddToNotGoing(userId);
+        }
+        else{
+            event.RemoveFromNotGoing(userId);
+        }
+    }
+
+    const user = users.get(userId);
+    if (user != undefined){
+        if (notGoing == true){
+            user.SetNotGoing(eventId);
+        }
+        else{
+            user.RemoveFromNotGoing(eventId);
         }
     }
 
@@ -457,6 +797,56 @@ app.post("/api/dislikeEvent", authenticate, (req, res) => {
     }
 
     res.send('Data Received');
+});
+
+app.post("/api/inviteToGroup", (req, res) => {
+    const groupId = req.body.groupId;
+    const invitedUsers = req.body.invitedUsers;
+
+    let group = publicGroups.get(groupId);
+    if (group == undefined){
+        group = privateGroups.get(groupId);
+    }
+    
+    if(group != undefined){
+        group.InviteUsers(invitedUsers)
+    }
+
+    for (const invitedUser of invitedUsers){
+        const user = users.get(invitedUser);
+
+        if(user == undefined){
+            res.sendStatus(404);
+            return res;
+        }
+
+        user.InviteToGroup(groupId);
+    }
+});
+
+app.post("/api/inviteToEvent", (req, res) => {
+    const eventId = req.body.eventId;
+    const invitedUsers = req.body.invitedUsers;
+
+    let event = publicEvents.get(eventId);
+    if (event == undefined){
+        event = privateEvents.get(eventId);
+    }
+    
+    if(event != undefined){
+        event.InviteUsers(invitedUsers)
+    }
+
+    for (const invitedUser of invitedUsers){
+        const user = users.get(invitedUser);
+
+        if(user == undefined){
+            res.sendStatus(404);
+            return res;
+        }
+
+        user.InviteToEvent(eventId);
+    }
 });
 
 app.post("/api/log-in", (req, res) => {
