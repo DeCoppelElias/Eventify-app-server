@@ -1,9 +1,10 @@
 class Event{
-    constructor(id, title, location, time, tags, description, restricted, imageType, creatorId) {
+    constructor(id, title, location, startTime, endTime, tags, description, restricted, imageType, creatorId) {
         this.id = id;
         this.title = title;
         this.location = location;
-        this.time = time;
+        this.startTime = startTime;
+        this.endTime = endTime;
         this.description = description;
         this.restricted = restricted;
         this.tags = tags;
@@ -98,3 +99,4 @@ class Event{
 }
 
 exports.Event = Event;
+module.exports = Event

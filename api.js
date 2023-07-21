@@ -6,52 +6,67 @@ const User = require('./datatypes/User');
 const Post = require('./datatypes/Post');
 const {default:nextId} = require("react-id-generator");
 const TestSetup = require('./TestSetup');
-const fileUpload = require('express-fileupload');
+const middleware = require('./middleware')
+const admin = require('./config/firebase');
+const {
+        add,
+        differenceInMinutes,
+    } = require('date-fns');
+const multer  = require('multer');
+var eventStorage = multer.diskStorage(
+    {
+        destination: 'public/Images/events',
+        filename: function ( req, file, cb ) {
+            cb( null, 'image-' + req.body.eventId + "." + file.mimetype.split("/")[1]);
+        } 
+    }
+);
+var uploadEventImage = multer( { storage: eventStorage } );
+var groupStorage = multer.diskStorage(
+    {
+        destination: 'public/Images/groups',
+        filename: function ( req, file, cb ) {
+            cb( null, 'image-' + req.body.groupId + "." + file.mimetype.split("/")[1]);
+        } 
+    }
+);
+var uploadGroupImage = multer( { storage: groupStorage } );
 
 const app = express();
-app.use(fileUpload());
 
-const testSetup = new TestSetup();
-const publicEvents = testSetup.publicEvents;
-const privateEvents = testSetup.privateEvents;
-const publicGroups = testSetup.publicGroups;
-const privateGroups = testSetup.privateGroups;
-const users = testSetup.users;
-const posts = testSetup.posts;
-const tags = testSetup.tags;
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.static('public'));
+app.use(middleware.decodeToken)
 
-const authenticate = (req, res, next) => {
-    if (req.headers.authorization === undefined){
-        res.status(401).send('Unauthorized request');
-        return res;
-    }
-    const token = req.headers.authorization.split(" ")[1];
-    if (!token) {
-        return res.status(401).send('Unauthorized request');
-    }
-
-    try {
-        const payload = jwt.verify(token, "secretjwtKey");
-        req.user = payload; 
-        next();
-    }
-    catch (ex) {
-        res.status(400).send('Invalid token');
-    }
-}
+let publicEvents = new Map();
+let privateEvents = new Map();
+let publicGroups = new Map();
+let privateGroups = new Map();
+let users = new Map();
+let posts = new Map();
+let tags = [];
+const testSetup = new TestSetup();
+testSetup.initialize().then(()=> {
+    publicEvents = testSetup.publicEvents;
+    privateEvents = testSetup.privateEvents;
+    publicGroups = testSetup.publicGroups;
+    privateGroups = testSetup.privateGroups;
+    users = testSetup.users;
+    posts = testSetup.posts;
+    tags = testSetup.tags;
+    console.log("Succesfully created the test setup")
+})
 
 app.get('/', (req, res) => {
   res.send('App is running..')
 });
 
-app.get("/api/getPublicEvents", authenticate, (req, res) => {
+app.get("/api/getPublicEvents", (req, res) => {
     res.json({"events": Array.from(publicEvents.values())})
 });
 
-app.get("/api/getGoingEvents", authenticate, (req, res) => {
+app.get("/api/getGoingEvents", (req, res) => {
     const userId = req.query.userId;
 
     const user = users.get(userId);
@@ -75,7 +90,7 @@ app.get("/api/getGoingEvents", authenticate, (req, res) => {
     res.json({"events": events})
 });
 
-app.get("/api/getNotGoingEvents", authenticate, (req, res) => {
+app.get("/api/getNotGoingEvents", (req, res) => {
     const userId = req.query.userId;
 
     const user = users.get(userId);
@@ -99,7 +114,7 @@ app.get("/api/getNotGoingEvents", authenticate, (req, res) => {
     res.json({"events": events})
 });
 
-app.get("/api/getMaybeEvents", authenticate, (req, res) => {
+app.get("/api/getMaybeEvents", (req, res) => {
     const userId = req.query.userId;
 
     const user = users.get(userId);
@@ -123,7 +138,7 @@ app.get("/api/getMaybeEvents", authenticate, (req, res) => {
     res.json({"events": events})
 });
 
-app.get("/api/getNotRepliedInvitedEvents", authenticate, (req, res) => {
+app.get("/api/getNotRepliedInvitedEvents", (req, res) => {
     const userId = req.query.userId;
     const invitedEvents = GetInvitedEvents(userId);
     res.json({"events": invitedEvents})
@@ -145,13 +160,13 @@ function GetInvitedEvents(userId){
     return invitedEvents;
 }
 
-app.get("/api/getYourEvents", authenticate, (req, res) => {
+app.get("/api/getYourEvents", (req, res) => {
     const userId = req.query.userId;
     const invitedEvents = GetYourEvents(userId);
     res.json({"events": invitedEvents})
 });
 
-app.get("/api/getTags", authenticate, (req, res) => {
+app.get("/api/getTags", (req, res) => {
     res.json({"tags": tags})
 });
 
@@ -175,7 +190,7 @@ function GetYourEvents(userId){
     return yourEvents;
 }
 
-app.get("/api/getEvent", authenticate, (req, res) => {
+app.get("/api/getEvent", (req, res) => {
     const eventId = req.query.eventId;
 
     let event = publicEvents.get(eventId);
@@ -193,7 +208,13 @@ app.get("/api/getEvent", authenticate, (req, res) => {
     res.status(404).send("Event does not exist");
 });
 
-app.get("/api/getEvents", authenticate, (req, res) => {
+app.get("/api/getEventImage", (req, res) => {
+    const eventId = req.query.eventId;
+    const imageType = req.query.imageType;
+    res.sendFile(`D:/VisualStudioProjects/first project/server/public/Images/events/image-${String(eventId)}.${String(imageType)}`);
+});
+
+app.get("/api/getEvents", (req, res) => {
     const eventIds = req.query.eventIds;
     const events = [];
     if (eventIds == undefined){
@@ -216,27 +237,27 @@ app.get("/api/getEvents", authenticate, (req, res) => {
     return res;
 });
 
-app.get("/api/getUser", authenticate, (req, res) => {
-    const userId = req.query.userId;
+// app.get("/api/getUser", (req, res) => {
+//     const userId = req.query.userId;
 
-    const user = users.get(userId);
-    if (user != undefined){
-        res.json({"user": user});
-        return res;
-    }
+//     const user = users.get(userId);
+//     if (user != undefined){
+//         res.json({"user": user});
+//         return res;
+//     }
 
-    res.status(404).send("User does not exist");
-});
+//     res.status(404).send("User does not exist");
+// });
 
-app.get("/api/getUsers", authenticate, (req, res) => {
+app.get("/api/getUsers", (req, res) => {
     res.json({"users": Array.from(users.values())});
 });
 
-app.get("/api/getPublicGroups", authenticate, (req, res) => {
+app.get("/api/getPublicGroups", (req, res) => {
     res.json({"groups": Array.from(publicGroups.values())})
 });
 
-app.get("/api/getSubscribedGroups", authenticate, (req, res) => {
+app.get("/api/getSubscribedGroups", (req, res) => {
     const userId = req.query.userId;
     const subscribedGroups = GetSubscribedGroups(userId);
     res.json({"groups": subscribedGroups});
@@ -262,7 +283,33 @@ function GetSubscribedGroups(userId){
     return subscribedGroups;
 }
 
-app.get("/api/getNotRepliedInvitedGroups", authenticate, (req, res) => {
+app.get("/api/getAdministratorGroups", (req, res) => {
+    const userId = req.query.userId;
+    const subscribedGroups = GetAdministratorGroups(userId);
+    res.json({"groups": subscribedGroups});
+});
+
+function GetAdministratorGroups(userId){
+    let administratorGroups = [];
+
+    const user = users.get(userId);
+    if (user != undefined){
+        const administratorGroupIds = user.administratorGroups;
+        for (id of administratorGroupIds){
+            let group = privateGroups.get(id);
+            if(group == undefined){
+                group = publicGroups.get(id);
+            }
+            if (group != undefined){
+                administratorGroups.push(group);
+            }
+        }
+    }
+
+    return administratorGroups;
+}
+
+app.get("/api/getNotRepliedInvitedGroups", (req, res) => {
     const userId = req.query.userId;
     const invitedGroups = GetInvitedGroups(userId);
     res.json({"groups": invitedGroups});
@@ -285,7 +332,7 @@ function GetInvitedGroups(userId){
     return invitedGroups;
 }
 
-app.get("/api/getYourGroups", authenticate, (req, res) => {
+app.get("/api/getYourGroups", (req, res) => {
     const userId = req.query.userId;
     const yourGroups = GetYourGroups(userId);
     res.json({"groups": yourGroups})
@@ -313,7 +360,7 @@ function GetYourGroups(userId){
     return yourGroups;
 }
 
-app.get("/api/getGroup", authenticate, (req, res) => {
+app.get("/api/getGroup", (req, res) => {
     const groupId = req.query.groupId;
 
     let group = publicGroups.get(groupId);
@@ -331,11 +378,11 @@ app.get("/api/getGroup", authenticate, (req, res) => {
     res.status(404).send("Group does not exist");
 });
 
-app.get("/api/authenticate", authenticate, (req, res) => {
+app.get("/api/authenticate", (req, res) => {
     res.send("token is valid");
 });
 
-app.get("/api/getPosts", authenticate, (req, res) => {
+app.get("/api/getPosts", (req, res) => {
     const id = req.query.id;
     const type = req.query.type;
 
@@ -383,7 +430,7 @@ app.get("/api/getPosts", authenticate, (req, res) => {
     res.json({"posts": []})
 });
 
-app.get("/api/getInvitedUsers", authenticate, (req, res) => {
+app.get("/api/getInvitedUsers", (req, res) => {
     const id = req.query.id;
     const type = req.query.type;
 
@@ -417,8 +464,54 @@ app.get("/api/getInvitedUsers", authenticate, (req, res) => {
     res.sendStatus(404);
 })
 
-app.post("/api/createPost", authenticate, (req, res) => {
-    const userId = req.body.userId;
+app.get("/api/getCalendarEvents", (req, res) => {
+    const userId = req.query.userId;
+    const startDate = new Date(req.query.startDate);
+    const endDate = add(startDate, { months: 1 })
+
+    const user = users.get(userId);
+    if(user == undefined){
+        res.sendStatus(404);
+        return res;
+    }
+
+    const calendarGoingEvents = GetCalendarEvents(user.going, startDate, endDate);
+    const calendarMaybeEvents = GetCalendarEvents(user.maybe, startDate, endDate);
+    const calendarYourEvents = GetCalendarEvents(user.yourEvents, startDate, endDate);
+    
+    res.json({
+        calendarGoingEvents: calendarGoingEvents,
+        calendarMaybeEvents: calendarMaybeEvents,
+        calendarYourEvents: calendarYourEvents
+    })
+})
+
+function GetCalendarEvents(events, startDate, endDate){
+    const dif = differenceInMinutes(endDate, startDate);
+    const calendarEvents = [];
+    for (id of events){
+        const event = GetEvent(id);
+        if(event != undefined){
+            const eventTime = new Date(event.startTime);
+            const currentDif = differenceInMinutes(eventTime, startDate);
+            if(currentDif < dif){
+                calendarEvents.push(event);
+            }
+        }
+    }
+    return calendarEvents;
+}
+
+function GetEvent(eventId){
+    let event = publicEvents.get(eventId);
+    if(event == undefined){
+        event = privateEvents.get(eventId);
+    }
+    return event
+}
+
+app.post("/api/createPost", (req, res) => {
+    const userId = req.query.userId;
     const id = req.body.id;
     const type = req.body.type;
     const postTitle = req.body.postTitle;
@@ -457,8 +550,8 @@ app.post("/api/createPost", authenticate, (req, res) => {
     
 })
 
-app.post("/api/removePost", authenticate, (req, res) => {
-    const userId = req.body.userId;
+app.post("/api/removePost", (req, res) => {
+    const userId = req.query.userId;
     const id = req.body.id;
     const type = req.body.type;
     const postId = req.body.postId;
@@ -492,15 +585,16 @@ app.post("/api/removePost", authenticate, (req, res) => {
     }
 })
 
-app.post("/api/createEvent", authenticate, (req, res) => {
-    const userId = req.body.userId;
+app.post("/api/createEvent", (req, res) => {
+    const userId = req.query.userId;
     const eventId = nextId();
 
     const newEvent = new Event(
         eventId, 
         req.body.title, 
         req.body.location, 
-        req.body.time, 
+        req.body.startTime,
+        req.body.endTime,
         req.body.tags, 
         req.body.description, 
         req.body.restricted,
@@ -509,6 +603,18 @@ app.post("/api/createEvent", authenticate, (req, res) => {
     
     if(req.body.restricted){
         privateEvents.set(newEvent.id, newEvent);
+
+        const createForGroupsIds = req.body.createForGroups;
+        for (id of createForGroupsIds){
+            let group = publicGroups.get(id);
+            if(group == undefined){
+                group = privateGroups.get(id);
+            }
+
+            if(group != undefined){
+                group.AddEvent(eventId);
+            }
+        }
     }
     else{
         publicEvents.set(newEvent.id, newEvent);
@@ -522,8 +628,53 @@ app.post("/api/createEvent", authenticate, (req, res) => {
     res.send({'eventId': eventId});
 });
 
-app.post("/api/createGroup", authenticate, (req, res) => {
-    const userId = req.body.userId;
+app.post("/api/registerUser", (req, res) => {
+    try {
+        admin.getAuth().createUser({
+            email: req.body.email,
+            emailVerified: false,
+            password: req.body.password,
+            displayName: req.body.username,
+            disabled: false,
+        })
+        .then((userRecord) => {
+            console.log('Successfully created new user in firebase:', userRecord.uid);
+            registerUserInternally(userRecord);
+        })
+        .catch((error) => {
+            console.log('Error creating new user in firebase:', error);
+        });
+    } catch (err){
+        if (err.code === "auth/weak-password"){
+            displayError("The password should be at least 6 characters long.");
+        }
+        else if (err.code === "auth/email-already-exists"){
+            displayError("Your email is already in use.");
+        }
+        else{
+            console.error(err.code);
+        }
+    }
+})
+
+app.post("/api/registerUserInternally", (req, res) => {
+    const userId = req.query.userId;
+    admin.auth().getUser(userId).then(function(userRecord){
+        if(users.get(userId) == undefined){
+            registerUserInternally(userRecord);
+        }
+    }).catch(function (error){console.log('Error creating new user internally:', error);})
+    res.sendStatus(200)
+})
+
+function registerUserInternally(userRecord){
+    const user = new User(userRecord.uid, userRecord.displayName, userRecord.email);
+    users.set(userRecord.uid, user);
+    console.log("Successfully created new user internally: ", userRecord.uid)
+}
+
+app.post("/api/createGroup", (req, res) => {
+    const userId = req.query.userId;
     const groupId = nextId();
 
     const newGroup = new Group(
@@ -550,36 +701,16 @@ app.post("/api/createGroup", authenticate, (req, res) => {
     res.send({'groupId': groupId});
 });
 
-app.post("/api/uploadEventImage", authenticate, (req, res) => {
-    const eventId = req.body.eventId;
-    const { file } = req.files;
-    if (!file) return res.sendStatus(400);
-
-    // If does not have image mime type prevent from uploading
-    if(file.mimetype == 'image/jpeg' || file.mimetype == 'image/png' || file.mimetype == 'image/svg' || file.mimetype == 'image/jpg'){
-        const fileType = file.mimetype.split("/")[1];
-        file.mv('public/Images/events/image-' + eventId + "." + fileType);
-    }
-
-    res.send('Data Received');
+app.post("/api/uploadEventImage", uploadEventImage.single("file") , (req, res) => {
+    
 })
 
-app.post("/api/uploadGroupImage", authenticate, (req, res) => {
-    const groupId = req.body.groupId;
-    const { file } = req.files;
-    if (!file) return res.sendStatus(400);
-
-    // If does not have image mime type prevent from uploading
-    if(file.mimetype == 'image/jpeg' || file.mimetype == 'image/png' || file.mimetype == 'image/svg' || file.mimetype == 'image/jpg'){
-        const fileType = file.mimetype.split("/")[1];
-        file.mv('public/Images/groups/image-' + groupId + "." + fileType);
-    }
-
-    res.send('Data Received');
+app.post("/api/uploadGroupImage", uploadGroupImage.single("file"), (req, res) => {
+    
 })
 
-app.post("/api/subscribeToGroup", authenticate, (req, res) => {
-    const userId = req.body.userId;
+app.post("/api/subscribeToGroup", (req, res) => {
+    const userId = req.query.userId;
     const groupId = req.body.groupId;
 
     let group = publicGroups.get(groupId);
@@ -607,8 +738,8 @@ app.post("/api/subscribeToGroup", authenticate, (req, res) => {
     res.send('Data Received');
 });
 
-app.post("/api/unSubscribeFromGroup", authenticate, (req, res) => {
-    const userId = req.body.userId;
+app.post("/api/unSubscribeFromGroup", (req, res) => {
+    const userId = req.query.userId;
     const groupId = req.body.groupId;
 
     let group = publicGroups.get(groupId);
@@ -636,8 +767,8 @@ app.post("/api/unSubscribeFromGroup", authenticate, (req, res) => {
     res.send('Data Received');
 });
 
-app.post("/api/setGoing", authenticate, (req, res) => {
-    const userId = req.body.userId;
+app.post("/api/setGoing", (req, res) => {
+    const userId = req.query.userId;
     const eventId = req.body.eventId;
     const going = req.body.going;
 
@@ -674,8 +805,8 @@ app.post("/api/setGoing", authenticate, (req, res) => {
     res.send('Data Received');
 });
 
-app.post("/api/setNotGoing", authenticate, (req, res) => {
-    const userId = req.body.userId;
+app.post("/api/setNotGoing", (req, res) => {
+    const userId = req.query.userId;
     const eventId = req.body.eventId;
     const notGoing = req.body.notGoing;
 
@@ -705,8 +836,8 @@ app.post("/api/setNotGoing", authenticate, (req, res) => {
     res.send('Data Received');
 });
 
-app.post("/api/setMaybe", authenticate, (req, res) => {
-    const userId = req.body.userId;
+app.post("/api/setMaybe", (req, res) => {
+    const userId = req.query.userId;
     const eventId = req.body.eventId;
     const maybe = req.body.maybe;
 
@@ -743,8 +874,8 @@ app.post("/api/setMaybe", authenticate, (req, res) => {
     res.send('Data Received');
 });
 
-app.post("/api/likeEvent", authenticate, (req, res) => {
-    const userId = req.body.userId;
+app.post("/api/likeEvent", (req, res) => {
+    const userId = req.query.userId;
     const postId = req.body.postId;
     const like = req.body.like;
 
@@ -771,8 +902,8 @@ app.post("/api/likeEvent", authenticate, (req, res) => {
     res.send('Data Received');
 });
 
-app.post("/api/dislikeEvent", authenticate, (req, res) => {
-    const userId = req.body.userId;
+app.post("/api/dislikeEvent", (req, res) => {
+    const userId = req.query.userId;
     const postId = req.body.postId;
     const dislike = req.body.dislike;
 
@@ -864,14 +995,5 @@ app.post("/api/log-in", (req, res) => {
     }
     res.status(400).json({ message: "Invalid email or password." });
 });
-
-app.use(express.static('public'));
-app.use(
-    fileUpload({
-    limits: {
-        fileSize: 10000000, // Around 10MB
-    },
-    abortOnLimit: true,
-}))
 
 app.listen(5000, () => {console.log("server started on port 5000")})

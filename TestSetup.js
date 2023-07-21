@@ -1,48 +1,50 @@
-const { Event } = require('./datatypes/Event');
+const Event = require('./datatypes/Event');
 const Group = require('./datatypes/Group');
 const User = require('./datatypes/User');
-const Post = require('./datatypes/Post')
+const Post = require('./datatypes/Post');
+const admin = require('./config/firebase');
 
 class TestSetup{
     constructor(){
-        this.users = this.CreateUsers();
+        
+    }
+
+    async initialize(){
+        const users = await this.CreateUsers();
+        this.users = users;
         this.publicGroups = this.CreatePublicGroups();
         this.privateGroups = this.CreatePrivateGroups();
         this.publicEvents = this.CreatePublicEvents();
         this.privateEvents = this.CreatePrivateEvents();
         this.posts = this.CreatePosts();
-        this.tags = ["outside", "inside", "party", "chill", "sport"]
+        this.tags = ["outside", "inside", "party", "chill", "sport"];
+        console.log("Initialized test setup values")
     }
 
-    CreateUsers(){
+    async CreateUsers(){
         let users = new Map();
     
-        const EliasUser = new User(
-            "test-user-Elias",
-            "Elias", 
-            "De Coppel", 
-            "elias@gmail.com", 
-            "Elias", 
-            "Elias");
-        users.set(EliasUser.id, EliasUser);
-    
-        const JoranUser = new User(
-            "test-user-Joran",
-            "Joran", 
-            "De Coppel", 
-            "joran@gmail.com", 
-            "Joran", 
-            "Joran");
-        users.set(JoranUser.id, JoranUser);
-        
-        const SophieUser = new User(
-            "test-user-Sophie",
-            "Sophie", 
-            "De Coppel", 
-            "sophie@gmail.com", 
-            "Sophie", 
-            "Sophie");
-        users.set(SophieUser.id, SophieUser);
+        const listAllUsers = async(nextPageToken) => {
+            // List batch of users, 1000 at a time.
+            await admin.auth()
+                .listUsers(1000, nextPageToken)
+                .then((listUsersResult) => {
+                    listUsersResult.users.forEach((userRecord) => {
+                        console.log('registering user interally: ', userRecord.uid);
+                        const user = new User(userRecord.uid, userRecord.displayName, userRecord.email)
+                        users.set(userRecord.uid, user)
+                });
+                if (listUsersResult.pageToken) {
+                  // List next batch of users.
+                  listAllUsers(listUsersResult.pageToken);
+                }
+            })
+            .catch((error) => {
+                console.log('Error listing users:', error);
+            });
+        };
+        // Start listing users from the beginning, 1000 at a time.
+        await listAllUsers();
     
         return users;
     }
@@ -53,40 +55,43 @@ class TestSetup{
             "test-volleyball-event", 
             "Volleybal practice", 
             "The local gym",
-            new Date('December 20, 2023 16:15:00'),
+            new Date(2023, 6, 20, 16, 30),
+            new Date(2023, 6, 20, 19, 30),
             ["inside", "sport", "chill"],
             "We are going to practise all sorts of volleybal drills. Starting with easy drills for warmup and then building up to more difficult exercises.", 
             false,
             "jpg",
-            this.users.get("test-user-Elias").id);
+            this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").id);
         events.set(volleybalEvent.id, volleybalEvent);
-        this.users.get("test-user-Elias").AddEvent(volleybalEvent.id);
+        this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").AddEvent(volleybalEvent.id);
     
         const footballEvent = new Event(
             "test-football-event", 
             "Casual Football", 
             "The local park",
-            new Date('January 10, 2023 12:15:00'),
+            new Date(2023, 6, 25, 16, 30),
+            new Date(2023, 6, 25, 19, 30),
             ["outside", "sport"],
             "Playing some casual footbal with everyone that want to join us.", 
             false,
             "jpg",
-            this.users.get("test-user-Joran").id);
+            this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").id);
         events.set(footballEvent.id, footballEvent);
-        this.users.get("test-user-Joran").AddEvent(footballEvent.id);
+        this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").AddEvent(footballEvent.id);
     
         const baseballEvent = new Event(
             "test-baseball-event", 
             "Baseball games", 
             "The local park",
-            new Date('Juli 23, 2023 14:30:00'),
+            new Date(2023, 6, 30, 16, 30),
+            new Date(2023, 6, 30, 19, 30),
             ["outside", "sport"],
             "Going to play some baseball with my friends, join if you're interested!!", 
             false,
             "jpg",
-            this.users.get("test-user-Elias").id);
+            this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").id);
         events.set(baseballEvent.id, baseballEvent);
-        this.users.get("test-user-Elias").AddEvent(baseballEvent.id);
+        this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").AddEvent(baseballEvent.id);
     
         return events;
     }
@@ -97,45 +102,48 @@ class TestSetup{
             "test-cantus-event", 
             "3de letter cantus", 
             "keuken zuid",
-            new Date('june 30, 2023 20:00:00'),
+            new Date(2023, 6, 20, 16, 30),
+            new Date(2023, 6, 20, 19, 30),
             ["inside", "party"],
             "3de letter cantus, lets goooooooooooo.", 
             false,
             "jpg",
-            this.users.get("test-user-Elias").id);
+            this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").id);
         events.set(cantusEvent.id, cantusEvent);
-        this.users.get("test-user-Elias").AddEvent(cantusEvent.id);
-        this.users.get("test-user-Joran").InviteToEvent(cantusEvent.id);
-        this.users.get("test-user-Sophie").InviteToEvent(cantusEvent.id);
+        this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").AddEvent(cantusEvent.id);
+        this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").InviteToEvent(cantusEvent.id);
+        this.users.get("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2").InviteToEvent(cantusEvent.id);
     
         const lanParty = new Event(
             "test-lanParty-event", 
             "Lan Party", 
             "At my house",
-            new Date('May 28, 2023 18:00:00'),
+            new Date(2023, 6, 20, 16, 30),
+            new Date(2023, 6, 20, 19, 30),
             ["inside", "chill"],
             "Lan party at my house! Bring chips!", 
             false,
             "jpg",
-            this.users.get("test-user-Joran").id);
+            this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").id);
         events.set(lanParty.id, lanParty);
-        this.users.get("test-user-Joran").AddEvent(lanParty.id);
-        this.users.get("test-user-Elias").InviteToEvent(lanParty.id);
-        this.users.get("test-user-Sophie").InviteToEvent(lanParty.id);
+        this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").AddEvent(lanParty.id);
+        this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").InviteToEvent(lanParty.id);
+        this.users.get("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2").InviteToEvent(lanParty.id);
         
         for (let i=0; i<10; i++){
             const boitEvent = new Event(
                 "test-boit-event" + String(i), 
                 "dikke zwoiren bosh", 
                 "keuken zuid",
-                new Date('june 30, 2023 20:00:00'),
+                new Date(2023, 6, 21, 16, 30),
+                new Date(2023, 6, 21, 19, 30),
                 ["inside", "party"],
                 "...............", 
                 false,
                 "jpg",
-                this.users.get("test-user-Elias").id);
+                this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").id);
             events.set(boitEvent.id, boitEvent);
-            this.users.get("test-user-Elias").AddEvent(cantusEvent.id);
+            this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").AddEvent(cantusEvent.id);
             this.publicGroups.get('test-lerkeveld-group').AddEvent(boitEvent.id);
         }
     
@@ -152,9 +160,9 @@ class TestSetup{
             ["party", "sport", "chill"],
             false,
             "png",
-            this.users.get("test-user-Elias").id);
+            this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").id);
         groups.set(lerkeveldGroup.id, lerkeveldGroup);
-        this.users.get("test-user-Elias").AddGroup(lerkeveldGroup.id);
+        this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").AddGroup(lerkeveldGroup.id);
     
         const artGroup = new Group(
             "test-drawing-group",
@@ -163,9 +171,9 @@ class TestSetup{
             ["chill"],
             false,
             "jpg",
-            this.users.get("test-user-Sophie").id);
+            this.users.get("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2").id);
         groups.set(artGroup.id, artGroup);
-        this.users.get("test-user-Sophie").AddGroup(artGroup.id);
+        this.users.get("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2").AddGroup(artGroup.id);
     
         const boardgameGroup = new Group(
             "test-boardgame-group",
@@ -174,9 +182,9 @@ class TestSetup{
             ["chill"],
             false,
             "jpg",
-            this.users.get("test-user-Joran").id); 
+            this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").id); 
         groups.set(boardgameGroup.id, boardgameGroup);
-        this.users.get("test-user-Joran").AddGroup(boardgameGroup.id);
+        this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").AddGroup(boardgameGroup.id);
     
         return groups;
     }
@@ -191,11 +199,11 @@ class TestSetup{
             ["party", "sport", "chill"],
             true,
             "png",
-            this.users.get("test-user-Elias").id);
+            this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").id);
         groups.set(lerkeveldUnderground.id, lerkeveldUnderground);
-        this.users.get("test-user-Elias").AddGroup(lerkeveldUnderground.id);
-        this.users.get("test-user-Sophie").InviteToGroup(lerkeveldUnderground.id);
-        lerkeveldUnderground.InviteUsers([this.users.get("test-user-Sophie").id])
+        this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").AddGroup(lerkeveldUnderground.id);
+        this.users.get("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2").InviteToGroup(lerkeveldUnderground.id);
+        lerkeveldUnderground.InviteUsers([this.users.get("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2").id])
     
         return groups;
     }
@@ -207,7 +215,7 @@ class TestSetup{
             "test-volleybal1-post",
             "Don't miss the first training!!",
             "Hey guys, this is a friendly reminder to come to the first training session",
-            "test-user-Elias"
+            "K56WS2LFleel4GIKwFNxZLoaLTN2"
         );
         posts.set(volleybalPost1.id, volleybalPost1);
         this.publicEvents.get("test-volleyball-event").AddPost(volleybalPost1.id);
@@ -216,7 +224,7 @@ class TestSetup{
             "test-volleybal2-post",
             "Training location",
             "I was wondering where the first training session would be, which local gym exactly?",
-            "test-user-Elias"
+            "K56WS2LFleel4GIKwFNxZLoaLTN2"
         );
         posts.set(volleybalPost2.id, volleybalPost2);
         this.publicEvents.get("test-volleyball-event").AddPost(volleybalPost2.id);
@@ -225,7 +233,7 @@ class TestSetup{
             "test-volleybal3-post",
             "HYPEEEEEEE",
             "IM SO HYPED TO PLAY VOLLEYBAL WITH YOU GUYS OMG OMG",
-            "test-user-Elias"
+            "K56WS2LFleel4GIKwFNxZLoaLTN2"
         );
         posts.set(volleybalPost3.id, volleybalPost3);
         this.publicEvents.get("test-volleyball-event").AddPost(volleybalPost3.id);
@@ -234,7 +242,7 @@ class TestSetup{
             "test-lerkeveld1-post",
             "LETS GOOO",
             "hypee",
-            "test-user-Elias"
+            "K56WS2LFleel4GIKwFNxZLoaLTN2"
         );
         posts.set(lerkeveldPost1.id, lerkeveldPost1);
         this.publicGroups.get("test-lerkeveld-group").AddPost(lerkeveldPost1.id);

@@ -1,11 +1,8 @@
 class User{
-    constructor(id, firstName, lastName, email, username, password) {
+    constructor(id, username, email) {
         this.id = id;
-        this.firstName = firstName;
-        this.lastName = lastName;
+        this.username = username
         this.email = email;
-        this.username = username;
-        this.password = password;
 
         this.invitedEvents = [];
         this.invitedGroups = [];
@@ -16,6 +13,7 @@ class User{
 
         this.subscribedGroups = [];
         this.yourGroups = [];
+        this.administratorGroups = [];
 
         this.yourEvents = [];
         this.going = [];
@@ -24,6 +22,19 @@ class User{
 
         this.likedPosts = [];
         this.dislikedPosts = [];
+    }
+
+    AddAdministratorGroup(groupId){
+        if(!this.administratorGroups.includes(groupId)){
+            this.administratorGroups.push(groupId);
+        }
+    }
+
+    RemoveAdministratorGroup(groupId){
+        const index = this.administratorGroups.indexOf(groupId);
+        if(index > -1){
+            this.administratorGroups.slice(index, 1);
+        }
     }
 
     ReplyToGroupInvite(groupId){
@@ -92,8 +103,9 @@ class User{
     }
 
     AddGroup(groupId){
-        if (!this.yourGroups.includes(groupId)) {
+        if (!this.yourGroups.includes(groupId) && !this.administratorGroups.includes(groupId)) {
             this.yourGroups.push(groupId);
+            this.administratorGroups.push(groupId);
         }
     }
 
