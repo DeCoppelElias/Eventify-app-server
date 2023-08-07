@@ -1,7 +1,7 @@
 class User{
     constructor(id, username, email) {
         this.id = id;
-        this.username = username
+        this.username = username;
         this.email = email;
 
         this.invitedEvents = [];
@@ -22,6 +22,12 @@ class User{
 
         this.likedPosts = [];
         this.dislikedPosts = [];
+    }
+
+    static toJSON(user){
+        const userString = JSON.stringify(user);
+        const userJSON = JSON.parse(userString);
+        return userJSON;
     }
 
     AddAdministratorGroup(groupId){
@@ -96,13 +102,13 @@ class User{
         }
     }
 
-    AddEvent(eventId){
+    addEvent(eventId){
         if (!this.yourEvents.includes(eventId)) {
             this.yourEvents.push(eventId);
         }
     }
 
-    AddGroup(groupId){
+    addGroup(groupId){
         if (!this.yourGroups.includes(groupId) && !this.administratorGroups.includes(groupId)) {
             this.yourGroups.push(groupId);
             this.administratorGroups.push(groupId);

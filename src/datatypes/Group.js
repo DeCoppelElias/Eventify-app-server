@@ -15,6 +15,12 @@ class Group{
         this.administrators = [creatorId];
     }
 
+    static toJSON(group){
+        const groupString = JSON.stringify(group);
+        const groupJSON = JSON.parse(groupString);
+        return groupJSON;
+    }
+
     SubscribeUser(userId){
         if(!this.subscribedUsers.includes(userId)){
             this.subscribedUsers.push(userId);
@@ -37,7 +43,7 @@ class Group{
         }
     }
 
-    AddPost(postId){
+    addPost(postId){
         const index = this.posts.indexOf(postId);
         if (index == -1){
             this.posts.push(postId);
@@ -51,7 +57,7 @@ class Group{
         }
     }
 
-    AddEvent(eventId){
+    addEvent(eventId){
         const index = this.events.indexOf(eventId);
         if (index == -1){
             this.events.push(eventId);

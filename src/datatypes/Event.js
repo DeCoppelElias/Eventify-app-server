@@ -19,6 +19,21 @@ class Event{
         this.administrators = [creatorId];
     }
 
+    static toJSON(event){
+        const eventString = JSON.stringify(event);
+        const eventJSON = JSON.parse(eventString);
+        eventJSON.startTime = event.startTime;
+        eventJSON.endTime = event.endTime;
+        return eventJSON;
+    }
+
+    static fromJSON(eventJSON){
+        const event = Object.assign(new Event, eventJSON);
+        event.startTime = eventJSON.startTime.toDate();
+        event.endTime = eventJSON.endTime.toDate();
+        return event;
+    }
+
     InviteUsers(userIds){
         for (const userId of userIds){
             const index = this.invitedUsers.indexOf(userId);
@@ -28,7 +43,7 @@ class Event{
         }
     }
 
-    AddPost(postId){
+    addPost(postId){
         if (!this.posts.includes(postId)){
             this.posts.push(postId);
         }
