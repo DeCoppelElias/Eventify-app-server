@@ -20,7 +20,7 @@ class FirestoreEventManager{
         this.privateGroupsCollection = this.groupsCollection.doc("privateGroups").collection('privateGroups');
     }
 
-    addEvent(userId, event, createForGroups){
+    async addEvent(userId, event, createForGroups){
         const eventJSON = Event.toJSON(event);
         let eventDocRef = undefined;
         if(event.restricted){
@@ -31,7 +31,7 @@ class FirestoreEventManager{
         }
         const userDocRef = this.userCollection.doc(userId);
 
-        this.db.runTransaction(async (transaction) => {
+        await this.db.runTransaction(async (transaction) => {
             transaction.set(eventDocRef, eventJSON);
 
             const user = await FirestoreUserManager.getUser(userId);
@@ -64,6 +64,35 @@ class FirestoreEventManager{
         }
         else if (eventId.split("-")[0] == "public"){
             collectionRef = this.eventsCollection.doc("publicEvents").collection("publicEvents")
+        }
+        else{return undefined}
+
+        const docRef = collectionRef.doc(eventId);
+        let event = undefined;
+        await docRef.get().then((doc) => {
+            if (doc.exists) {
+                const eventJSON = doc.data();
+                event = Object.assign(new Event, eventJSON);
+                event.startTime = eventJSON.startTime.toDate();
+                event.endTime = eventJSON.endTime.toDate();
+            } else {
+                // doc.data() will be undefined in this case
+                console.log("No such document!");
+            }
+        }).catch((error) => {
+            console.log("Error getting document:", error);
+        });
+
+        return event;
+    }
+
+    static async getEvent(eventId){
+        let collectionRef = undefined;
+        if(eventId.split("-")[0] == "private"){
+            collectionRef = admin.firestore().collection('events').doc("privateEvents").collection("privateEvents");
+        }
+        else if (eventId.split("-")[0] == "public"){
+            collectionRef = admin.firestore().collection('events').doc("publicEvents").collection("publicEvents")
         }
         else{return undefined}
 

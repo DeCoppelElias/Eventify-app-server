@@ -1,12 +1,19 @@
 class Post{
-    constructor(id, title, text, creator) {
+    constructor(id, title, text, creator, createTime) {
         this.id = id;
         this.title = title;
         this.text = text;
         this.creator = creator;
+        this.createTime = createTime;
         
         this.likes = [];
         this.dislikes = [];
+    }
+
+    static toJSON(post){
+        const postString = JSON.stringify(post);
+        const postJSON = JSON.parse(postString);
+        return postJSON;
     }
 
     Like(userId){

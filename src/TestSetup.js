@@ -7,6 +7,7 @@ const FirestoreEventManager = require('./firestoreManagers/FirestoreEventManager
 const FirestoreGroupManager = require('./firestoreManagers/FirestoreGroupManager');
 const FirestoreUserManager = require('./firestoreManagers/FirestoreUserManager');
 const FirestorePostManager = require('./firestoreManagers/FirestorePostManager');
+const FirestoreTagManager = require('./firestoreManagers/FirestoreTagManager');
 
 class TestSetup{
     constructor(){
@@ -14,6 +15,7 @@ class TestSetup{
         this.firestoreGroupManager = new FirestoreGroupManager();
         this.firestoreUserManager = new FirestoreUserManager();
         this.firestorePostManager = new FirestorePostManager();
+        this.firestoreTagManager = new FirestoreTagManager();
         this.tomorrowStart = new Date()
         this.tomorrowStart.setDate(this.tomorrowStart.getDate() + 1)
         this.tomorrowStart.setHours(12)
@@ -25,12 +27,12 @@ class TestSetup{
     async initialize(){
         const users = await this.CreateUsers();
         this.users = users;
-        this.publicGroups = this.CreatePublicGroups();
-        this.privateGroups = this.CreatePrivateGroups();
-        this.publicEvents = this.CreatePublicEvents();
-        this.privateEvents = this.CreatePrivateEvents();
+        this.publicGroups = await this.CreatePublicGroups();
+        this.privateGroups = await this.CreatePrivateGroups();
+        this.publicEvents = await this.CreatePublicEvents();
+        this.privateEvents = await this.CreatePrivateEvents();
         this.posts = this.CreatePosts();
-        this.tags = ["outside", "inside", "party", "chill", "sport"];
+        this.tags = this.CreateTags();
         console.log("Initialized test setup values")
     }
 
@@ -65,10 +67,10 @@ class TestSetup{
         return users;
     }
     
-    CreatePublicEvents(){
+    async CreatePublicEvents(){
         let events = new Map();
         const volleybalEvent = new Event(
-            "public-test-volleyball-event", 
+            "public-event-test-volleyball-event", 
             "Volleybal practice", 
             "The local gym",
             this.tomorrowStart,
@@ -80,10 +82,10 @@ class TestSetup{
             this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").id);
         events.set(volleybalEvent.id, volleybalEvent);
         this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").addEvent(volleybalEvent.id);
-        this.firestoreEventManager.addEvent("K56WS2LFleel4GIKwFNxZLoaLTN2", volleybalEvent, []);
+        await this.firestoreEventManager.addEvent("K56WS2LFleel4GIKwFNxZLoaLTN2", volleybalEvent, []);
     
         const footballEvent = new Event(
-            "public-test-football-event", 
+            "public-event-test-football-event", 
             "Casual Football", 
             "The local park",
             this.tomorrowStart,
@@ -95,10 +97,10 @@ class TestSetup{
             this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").id);
         events.set(footballEvent.id, footballEvent);
         this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").addEvent(footballEvent.id);
-        this.firestoreEventManager.addEvent("V5RVupJJsohFVNAOBJneO9Md85y1", footballEvent, []);
+        await this.firestoreEventManager.addEvent("V5RVupJJsohFVNAOBJneO9Md85y1", footballEvent, []);
     
         const baseballEvent = new Event(
-            "public-test-baseball-event", 
+            "public-event-test-baseball-event", 
             "Baseball games", 
             "The local park",
             this.tomorrowStart,
@@ -110,15 +112,15 @@ class TestSetup{
             this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").id);
         events.set(baseballEvent.id, baseballEvent);
         this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").addEvent(baseballEvent.id);
-        this.firestoreEventManager.addEvent("K56WS2LFleel4GIKwFNxZLoaLTN2", baseballEvent, []);
+        await this.firestoreEventManager.addEvent("K56WS2LFleel4GIKwFNxZLoaLTN2", baseballEvent, []);
     
         return events;
     }
 
-    CreatePrivateEvents(){
+    async CreatePrivateEvents(){
         let events = new Map();
         const cantusEvent = new Event(
-            "private-test-cantus-event", 
+            "private-event-test-cantus-event", 
             "3de letter cantus", 
             "keuken zuid",
             this.tomorrowStart,
@@ -132,10 +134,10 @@ class TestSetup{
         this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").addEvent(cantusEvent.id);
         this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").InviteToEvent(cantusEvent.id);
         this.users.get("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2").InviteToEvent(cantusEvent.id);
-        this.firestoreEventManager.addEvent("K56WS2LFleel4GIKwFNxZLoaLTN2", cantusEvent, ["private-test-lerkeveldUnderground-group"]);
+        await this.firestoreEventManager.addEvent("K56WS2LFleel4GIKwFNxZLoaLTN2", cantusEvent, ["private-group-test-lerkeveldUnderground-group"]);
     
         const lanParty = new Event(
-            "private-test-lanParty-event", 
+            "private-event-test-lanParty-event", 
             "Lan Party", 
             "At my house",
             this.tomorrowStart,
@@ -149,16 +151,16 @@ class TestSetup{
         this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").addEvent(lanParty.id);
         this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").InviteToEvent(lanParty.id);
         this.users.get("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2").InviteToEvent(lanParty.id);
-        this.firestoreEventManager.addEvent("V5RVupJJsohFVNAOBJneO9Md85y1", lanParty, []);
+        await this.firestoreEventManager.addEvent("V5RVupJJsohFVNAOBJneO9Md85y1", lanParty, []);
     
         return events;
     }
     
-    CreatePublicGroups(){
+    async CreatePublicGroups(){
         let groups = new Map();
     
         const lerkeveldGroup = new Group(
-            "public-test-lerkeveld-group",
+            "public-group-test-lerkeveld-group",
             "Lerkeveld",
             "This is the lerkeveld group, lerkeveld events will be posted here.",
             ["party", "sport", "chill"],
@@ -167,10 +169,10 @@ class TestSetup{
             this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").id);
         groups.set(lerkeveldGroup.id, lerkeveldGroup);
         this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").addGroup(lerkeveldGroup.id);
-        this.firestoreGroupManager.addGroup("K56WS2LFleel4GIKwFNxZLoaLTN2",lerkeveldGroup);
+        await this.firestoreGroupManager.addGroup("K56WS2LFleel4GIKwFNxZLoaLTN2",lerkeveldGroup);
     
         const artGroup = new Group(
-            "public-test-drawing-group",
+            "public-group-test-drawing-group",
             "The Official Art Group",
             "In this group, we like to share self made art pieces.",
             ["chill"],
@@ -179,10 +181,10 @@ class TestSetup{
             this.users.get("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2").id);
         groups.set(artGroup.id, artGroup);
         this.users.get("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2").addGroup(artGroup.id);
-        this.firestoreGroupManager.addGroup("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2",artGroup);
+        await this.firestoreGroupManager.addGroup("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2",artGroup);
     
         const boardgameGroup = new Group(
-            "public-test-boardgame-group",
+            "public-group-test-boardgame-group",
             "Board games",
             "This group is for creating board game events!",
             ["chill"],
@@ -191,16 +193,16 @@ class TestSetup{
             this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").id); 
         groups.set(boardgameGroup.id, boardgameGroup);
         this.users.get("V5RVupJJsohFVNAOBJneO9Md85y1").addGroup(boardgameGroup.id);
-        this.firestoreGroupManager.addGroup("V5RVupJJsohFVNAOBJneO9Md85y1", boardgameGroup);
+        await this.firestoreGroupManager.addGroup("V5RVupJJsohFVNAOBJneO9Md85y1", boardgameGroup);
     
         return groups;
     }
 
-    CreatePrivateGroups(){
+    async CreatePrivateGroups(){
         let groups = new Map();
     
         const lerkeveldUnderground = new Group(
-            "private-test-lerkeveldUnderground-group",
+            "private-group-test-lerkeveldUnderground-group",
             "Lerkeveld Underground",
             "This is the lerkeveld underground group, only current members of lerkeveld are part of this group",
             ["party", "sport", "chill"],
@@ -211,13 +213,13 @@ class TestSetup{
         this.users.get("K56WS2LFleel4GIKwFNxZLoaLTN2").addGroup(lerkeveldUnderground.id);
         this.users.get("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2").InviteToGroup(lerkeveldUnderground.id);
         lerkeveldUnderground.InviteUsers([this.users.get("3tfrddTk1JUAQ2X9Rs6Vs98l5ZN2").id]);
-        lerkeveldUnderground.addEvent("private-test-cantus-event")
-        this.firestoreGroupManager.addGroup("K56WS2LFleel4GIKwFNxZLoaLTN2", lerkeveldUnderground);
+        lerkeveldUnderground.addEvent("private-event-test-cantus-event")
+        await this.firestoreGroupManager.addGroup("K56WS2LFleel4GIKwFNxZLoaLTN2", lerkeveldUnderground);
     
         return groups;
     }
 
-    CreatePosts(){
+    async CreatePosts(){
         const posts = new Map();
 
         const volleybalPost1 = new Post(
@@ -227,8 +229,8 @@ class TestSetup{
             "K56WS2LFleel4GIKwFNxZLoaLTN2"
         );
         posts.set(volleybalPost1.id, volleybalPost1);
-        this.publicEvents.get("public-test-volleyball-event").addPost(volleybalPost1.id);
-        this.firestorePostManager.addPost(volleybalPost1);
+        this.publicEvents.get("public-event-test-volleyball-event").addPost(volleybalPost1.id);
+        await this.firestorePostManager.addPost(volleybalPost1, "public-event-test-volleyball-event");
 
         const volleybalPost2 = new Post(
             "test-volleybal2-post",
@@ -237,8 +239,8 @@ class TestSetup{
             "K56WS2LFleel4GIKwFNxZLoaLTN2"
         );
         posts.set(volleybalPost2.id, volleybalPost2);
-        this.publicEvents.get("public-test-volleyball-event").addPost(volleybalPost2.id);
-        this.firestorePostManager.addPost(volleybalPost2);
+        this.publicEvents.get("public-event-test-volleyball-event").addPost(volleybalPost2.id);
+        await this.firestorePostManager.addPost(volleybalPost2, "public-event-test-volleyball-event");
 
         const volleybalPost3 = new Post(
             "test-volleybal3-post",
@@ -247,8 +249,8 @@ class TestSetup{
             "K56WS2LFleel4GIKwFNxZLoaLTN2"
         );
         posts.set(volleybalPost3.id, volleybalPost3);
-        this.publicEvents.get("public-test-volleyball-event").addPost(volleybalPost3.id);
-        this.firestorePostManager.addPost(volleybalPost3);
+        this.publicEvents.get("public-event-test-volleyball-event").addPost(volleybalPost3.id);
+        await this.firestorePostManager.addPost(volleybalPost3, "public-event-test-volleyball-event");
 
         const lerkeveldPost1 = new Post(
             "test-lerkeveld1-post",
@@ -257,10 +259,16 @@ class TestSetup{
             "K56WS2LFleel4GIKwFNxZLoaLTN2"
         );
         posts.set(lerkeveldPost1.id, lerkeveldPost1);
-        this.publicGroups.get("public-test-lerkeveld-group").addPost(lerkeveldPost1.id);
-        this.firestorePostManager.addPost(lerkeveldPost1);
+        this.publicGroups.get("public-group-test-lerkeveld-group").addPost(lerkeveldPost1.id);
+        await this.firestorePostManager.addPost(lerkeveldPost1, "public-group-test-lerkeveld-group");
 
         return posts;
+    }
+
+    async CreateTags(){
+        const tags = ["outside", "inside", "party", "chill", "sport"];
+        await this.firestoreTagManager.addTags(tags);
+        return tags;
     }
 }
 

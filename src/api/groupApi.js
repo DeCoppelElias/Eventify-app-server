@@ -41,14 +41,28 @@ router.get("/getGroup", async(req, res) => {
     return res.json({"group": group})
 });
 
+router.get("/getInvitedUsers", async(req, res) => {
+    const groupId = req.query.groupId;
+    const group = await firestoreGroupManager.getGroup(groupId);
+    const invitedUsers = group.invitedUsers;
+    return res.json({invitedUsers: invitedUsers})
+});
+
+router.post("/inviteToGroup", async(req, res) => {
+    const groupId = req.body.groupId;
+    const invitedUsers = req.body.invitedUsers;
+    await firestoreGroupManager.inviteToGroup(invitedUsers, groupId);
+    return res.sendStatus(200);
+});
+
 router.post("/createGroup", async(req, res) => {
     const userId = req.query.userId;
     let groupId = "";
     if(req.body.restricted){
-        groupId = "private-" + nextId();
+        groupId = "private-" + "group-" + nextId();
     }
     else{
-        groupId = "public-" + nextId();
+        groupId = "public-" + "group-" + nextId();
     }
 
     const newGroup = new Group(
@@ -65,18 +79,18 @@ router.post("/createGroup", async(req, res) => {
     return res.json({"groupId" : groupId});
 });
 
-router.post("/subscribeToGroup", (req, res) => {
+router.post("/subscribeToGroup", async(req, res) => {
     const userId = req.query.userId;
     const groupId = req.body.groupId;
-    firestoreGroupManager.subscribeToGroup(userId, groupId);
+    await firestoreGroupManager.subscribeToGroup(userId, groupId);
 
     return res.sendStatus(200); 
 });
 
-router.post("/unsubscribeFromGroup", (req, res) => {
+router.post("/unsubscribeFromGroup", async(req, res) => {
     const userId = req.query.userId;
     const groupId = req.body.groupId;
-    firestoreGroupManager.unsubscribeFromGroup(userId, groupId);
+    await firestoreGroupManager.unsubscribeFromGroup(userId, groupId);
 
     return res.sendStatus(200); 
 });

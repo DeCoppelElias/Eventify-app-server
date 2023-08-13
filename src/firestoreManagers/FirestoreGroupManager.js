@@ -167,7 +167,7 @@ class FirestoreGroupManager{
         return groups;
     }
 
-    addGroup(userId, group){
+    async addGroup(userId, group){
         const groupJSON = Group.toJSON(group);
         let groupDocRef = undefined;
         if(group.restricted){
@@ -178,7 +178,7 @@ class FirestoreGroupManager{
         }
         const userDocRef = this.userCollection.doc(userId);
 
-        this.db.runTransaction(async (transaction) => {
+        await this.db.runTransaction(async (transaction) => {
             transaction.set(groupDocRef, groupJSON);
             const user = await FirestoreUserManager.getUser(userId);
             user.addGroup(group.id);
@@ -187,7 +187,32 @@ class FirestoreGroupManager{
         });
     }
 
-    subscribeToGroup(userId, groupId){
+    async inviteToGroup(userIds, groupId){
+        let collectionRef = undefined;
+        if(groupId.split("-")[0] == "private"){
+            collectionRef = this.privateGroupsCollection;
+        }
+        else if (groupId.split("-")[0] == "public"){
+            collectionRef = this.publicGroupsCollection;
+        }
+        const groupDocRef = collectionRef.doc(groupId);
+        this.db.runTransaction(async (transaction) => {
+            const group = await FirestoreGroupManager.getGroup(groupId);
+            group.InviteUsers(userIds);
+            const groupJSON = Group.toJSON(group);
+            transaction.set(groupDocRef, groupJSON);
+
+            for (const userId of userIds){
+                const userDocRef = this.userCollection.doc(userId);
+                const user = await FirestoreUserManager.getUser(userId);
+                user.InviteToGroup(groupId);
+                const userJSON = User.toJSON(user);
+                transaction.set(userDocRef, userJSON);
+            }
+        });
+    }
+
+    async subscribeToGroup(userId, groupId){
         let collectionRef = undefined;
         if(groupId.split("-")[0] == "private"){
             collectionRef = this.privateGroupsCollection;
@@ -210,7 +235,7 @@ class FirestoreGroupManager{
         });
     }
 
-    unsubscribeFromGroup(userId, groupId){
+    async unsubscribeFromGroup(userId, groupId){
         let collectionRef = undefined;
         if(groupId.split("-")[0] == "private"){
             collectionRef = this.privateGroupsCollection;

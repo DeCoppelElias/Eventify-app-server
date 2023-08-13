@@ -75,6 +75,13 @@ router.get("/getCalendarEvents", async(req, res) => {
     })
 })
 
+router.get("/getInvitedUsers", async(req, res) => {
+    const eventId = req.query.eventId;
+    const event = await firestoreEventManager.getEvent(eventId);
+    const invitedUsers = event.invitedUsers;
+    return res.json({invitedUsers: invitedUsers})
+})
+
 router.post("/setGoing", (req, res) => {
     const userId = req.query.userId;
     const eventId = req.body.eventId;
@@ -148,10 +155,10 @@ router.post("/createEvent", (req, res) => {
     const userId = req.query.userId;
     let eventId = "";
     if(req.body.restricted){
-        eventId = "private-" + nextId();
+        eventId = "private-" + "event-" + nextId();
     }
     else{
-        eventId = "public-" + nextId();
+        eventId = "public-" + "event-" + nextId();
     }
 
     const newEvent = new Event(

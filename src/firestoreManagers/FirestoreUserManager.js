@@ -1,7 +1,7 @@
 const admin = require('../config/firebase');
 const User = require('../datatypes/User');
 const Event = require('../datatypes/Event');
-const Group = require('../datatypes/Group')
+const Group = require('../datatypes/Group');
 
 class FirestoreUserManager{
     constructor(){
@@ -13,6 +13,23 @@ class FirestoreUserManager{
     addUser(user){
         const userJSON = User.toJSON(user);
         this.userCollection.doc(user.id).set(userJSON);
+    }
+
+    async getAllUsers(){
+        const users = []
+        await this.userCollection.get()
+            .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                const userJSON = doc.data();
+                const user = Object.assign(new User, userJSON);
+                users.push(user);
+            });
+        })
+        .catch((error) => {
+            console.log("Error getting documents: ", error);
+        });
+
+        return users;
     }
 
     async getUser(userId){
